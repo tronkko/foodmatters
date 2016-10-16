@@ -18,16 +18,16 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingLeft="@dimen/activity_vertical_margin"
-        android:paddingRight="@dimen/activity_vertical_margin"
-        android:paddingBottom="@dimen/activity_vertical_margin"
-        android:paddingTop="@dimen/activity_vertical_margin">
+        >
 
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/relativeLayout2"
-            >
+            android:paddingLeft="@dimen/activity_vertical_margin"
+            android:paddingRight="@dimen/activity_vertical_margin"
+            android:paddingTop="@dimen/activity_vertical_margin"
+            android:paddingBottom="@dimen/activity_vertical_margin">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -55,9 +55,19 @@
             android:layout_rowWeight="1"
             android:layout_alignParentEnd="false"
             android:stackFromBottom="false"
-            android:layout_above="@+id/relativeLayout"
             android:layout_below="@+id/relativeLayout2"
-            android:fastScrollEnabled="false"/>
+            android:fastScrollEnabled="false"
+            android:layout_above="@+id/textView2"/>
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="10dp"
+            android:id="@+id/textView2"
+            android:layout_above="@+id/relativeLayout"
+            android:background="#14743b"
+            android:layout_alignRight="@+id/list_view"
+            android:layout_alignEnd="@+id/list_view"
+            android:autoText="false"/>
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -68,7 +78,11 @@
             android:layout_row="1"
             android:layout_rowWeight="0"
             android:layout_alignParentLeft="true"
-            android:id="@+id/relativeLayout">
+            android:id="@+id/relativeLayout"
+            android:paddingLeft="@dimen/activity_vertical_margin"
+            android:paddingRight="@dimen/activity_vertical_margin"
+            android:paddingTop="@dimen/activity_vertical_margin"
+            android:paddingBottom="@dimen/activity_vertical_margin">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -85,8 +99,13 @@
                 android:text="Scan"
                 android:id="@+id/scan_button"
                 android:layout_gravity="center_horizontal"
-                android:layout_alignParentRight="true"/>
+                android:layout_alignParentRight="true"
+                android:padding="20dp"
+                android:backgroundTintMode="src_over"
+                android:textColor="#ffffff"
+                android:background="#14743b"/>
         </RelativeLayout>
+
     </RelativeLayout>
 
 </android.support.v4.widget.DrawerLayout>

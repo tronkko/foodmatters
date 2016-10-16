@@ -18,6 +18,7 @@ import java.util.List;
 import java.lang.Exception;
 
 public class FoodActivity extends BaseActivity implements View.OnClickListener {
+    private Button removeButton;
     private Button storeButton;
     private EditText productField;
     private EditText manufacturerField;
@@ -37,9 +38,18 @@ public class FoodActivity extends BaseActivity implements View.OnClickListener {
     protected void onCreate (Bundle savedInstanceState) {
         super.onCreate (savedInstanceState);
 
+        /* Get parameters from calling activity */
+        Bundle extras = getIntent ().getExtras ();
+
         /* Set view */
         setContentView (R.layout.activity_food);
-        setTitle ("Add Product");
+
+        /* Set window title */
+        if (extras.getString ("title") != null) {
+            setTitle (extras.getString ("title"));
+        } else {
+            setTitle ("Add Food Item");
+        }
 
         /* Show home button */
         getSupportActionBar ().setDisplayHomeAsUpEnabled (true);
@@ -49,8 +59,9 @@ public class FoodActivity extends BaseActivity implements View.OnClickListener {
         storeButton = (Button) findViewById (R.id.store_button);
         storeButton.setOnClickListener (this);
 
-        /* Get parameters from calling activity */
-        Bundle extras = getIntent ().getExtras ();
+        /* Remove button */
+        removeButton = (Button) findViewById (R.id.remove_button);
+        removeButton.setOnClickListener (this);
 
         /* Name */
         productField = (EditText) findViewById (R.id.product_value);
@@ -135,7 +146,7 @@ public class FoodActivity extends BaseActivity implements View.OnClickListener {
      */
     @Override
     public boolean onCreateOptionsMenu (Menu menu) {
-        getMenuInflater ().inflate (R.menu.fridge_options, menu);
+        getMenuInflater ().inflate (R.menu.food_options, menu);
         return true;
     }
 
@@ -193,6 +204,7 @@ public class FoodActivity extends BaseActivity implements View.OnClickListener {
         /* Act on button*/
         switch (id) {
         case R.id.store_button:
+        case R.id.remove_button:
             /* Return product to calling activity */
             try {
                 Intent data = new Intent ();
@@ -221,7 +233,13 @@ public class FoodActivity extends BaseActivity implements View.OnClickListener {
                 if (q.equals ("")) {
                     q = "1";
                 }
-                params.putDouble ("quantity", Double.parseDouble (q));
+                if (id == R.id.store_button) {
+                    /* Add to store */
+                    params.putDouble ("quantity", Double.parseDouble (q));
+                } else {
+                    /* Substract from store */
+                    params.putDouble ("quantity", -Double.parseDouble (q));
+                }
 
                 /* Unit */
                 String unit = unitField.getSelectedItem ().toString ();

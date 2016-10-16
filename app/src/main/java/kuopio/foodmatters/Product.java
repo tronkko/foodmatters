@@ -1,7 +1,7 @@
 package kuopio.foodmatters;
 
 /**
- * Manage nutrional data for a product.
+ * Manage nutrional data for food item or complete meal.
  */
 public class Product {
     /* Product name, e.g. "Meetvursti" */

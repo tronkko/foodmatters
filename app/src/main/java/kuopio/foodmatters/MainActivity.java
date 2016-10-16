@@ -26,7 +26,7 @@ import android.widget.ListView;
 import java.util.ArrayList;
 
 /*
- * Display contents of fridge.
+ * Display list of consumed foods.
  *
  * Based on sample scanning app from
  * https://code.tutsplus.com/tutorials/android-sdk-create-a-barcode-reader--mobile-17162
@@ -41,8 +41,10 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
     private Button scanButton;
     private TextView contentText;
-    private ListView fridgeList;
-    private ArrayAdapter<Product> fridgeAdapter;
+    private ListView foodList;
+    private ArrayAdapter<Product> foodAdapter;
+
+    private DatabaseHandler db;
 
     /*
      * Initialize application.
@@ -51,10 +53,14 @@ public class MainActivity extends BaseActivity implements OnClickListener {
     protected void onCreate (Bundle savedInstanceState) {
         super.onCreate (savedInstanceState);
 
+        /* Initialize database connection */
+        db = new DatabaseHandler (this);
+        app.loadProducts (db);
+
         /* Set initial view */
         setContentView (R.layout.activity_main);
 
-        /* Set up drawer */
+        /* Set up drawer (navigation menu) */
         initializeDrawer ();
 
         /* Initialize scan button */
@@ -65,24 +71,24 @@ public class MainActivity extends BaseActivity implements OnClickListener {
         contentText = (TextView) findViewById (R.id.scan_content);
 
         /* Initialize list */
-        fridgeList = (ListView) findViewById (R.id.list_view);
+        foodList = (ListView) findViewById (R.id.list_view);
 
-        /* Initialize fridge contents */
-        ArrayList<Product> fridgeContents = app.getFridgeContents ();
+        /* Initialize foods */
+        ArrayList<Product> foodContents = app.getProducts ();
 
         /* Define list adapter */
-        fridgeAdapter = new ArrayAdapter<Product> (
+        foodAdapter = new ArrayAdapter<Product> (
             /* Context */ this,
             /* Row layout */ android.R.layout.simple_list_item_1,
             /* TextView */ android.R.id.text1,
-            /* Array of data */ fridgeContents
+            /* Array of data */ foodContents
         );
 
         /* Assign adapter to ListView */
-        fridgeList.setAdapter (fridgeAdapter);
+        foodList.setAdapter (foodAdapter);
 
         /* Handle click in list view */
-        fridgeList.setOnItemClickListener(
+        foodList.setOnItemClickListener(
             new AdapterView.OnItemClickListener () {
 
             @Override
@@ -91,11 +97,12 @@ public class MainActivity extends BaseActivity implements OnClickListener {
             {
 
                 /* Get clicked product */
-                Product p = (Product) fridgeList.getItemAtPosition (position);
+                Product p = (Product) foodList.getItemAtPosition (position);
 
                 /* Open product in food view */
                 Intent foodIntent = new Intent (MainActivity.this, FoodActivity.class);
                 Bundle params = new Bundle ();
+                params.putString ("title", "Add Food Item");
                 params.putString ("name", p.name);
                 params.putString ("manufacturer", p.manufacturer);
                 params.putDouble ("size", p.size);
@@ -119,7 +126,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
      */
     @Override
     public boolean onCreateOptionsMenu (Menu menu) {
-        getMenuInflater ().inflate (R.menu.fridge_options, menu);
+        getMenuInflater ().inflate (R.menu.main_options, menu);
         return true;
     }
 
@@ -132,23 +139,23 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
         int id = item.getItemId ();
         switch (id) {
-        case R.id.item1:
-            /* FIXME: option 1 */
-            Toast.makeText(
-                getApplicationContext (),
-                "Item 1 Selected",
-                Toast.LENGTH_LONG
-            ).show ();
-            ok = true;
-            break;
-
-        case R.id.item2:
-            /* FIXME: option 2 */
-            Toast.makeText(
-                getApplicationContext (),
-                "Item 2 Selected",
-                Toast.LENGTH_LONG
-            ).show ();
+        case R.id.statistics:
+            /* Open results view */
+            Intent resultsIntent = new Intent (MainActivity.this, ResultsActivity.class);
+            Bundle params = new Bundle ();
+            params.putString ("title", "Add Food Item");
+            params.putString ("name", "");
+            params.putString ("manufacturer", "");
+            params.putDouble ("size", 123.0);
+            params.putDouble ("quantity", 11.0);
+            params.putString ("unit", "g");
+            params.putString ("barcode", "");
+            params.putDouble ("energy", 123.0);
+            params.putDouble ("fat", 555.0);
+            params.putDouble ("carbohydrate", 234.3);
+            params.putDouble ("sugar", 234.3);
+            resultsIntent.putExtras (params);
+            startActivityForResult (resultsIntent, FOOD_REQUEST);
             ok = true;
             break;
 
@@ -202,26 +209,32 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
             /* Yes, retrieve barcode */
             String barcode = r.getContents ();
-            contentText.setText (barcode);
+            if (barcode != null) {
 
-            /* Retrieve product data using barcode */
-            Product p = app.findProduct (barcode);
+                /* Got barcode */
+                contentText.setText (barcode);
 
-            /* Open food view */
-            Intent foodIntent = new Intent (this, FoodActivity.class);
-            Bundle params = new Bundle ();
-            params.putString ("name", p.name);
-            params.putString ("manufacturer", p.manufacturer);
-            params.putDouble ("size", p.size);
-            params.putDouble ("quantity", p.quantity);
-            params.putString ("unit", p.unit);
-            params.putString ("barcode", barcode);
-            params.putDouble ("energy", p.energy);
-            params.putDouble ("fat", p.fat);
-            params.putDouble ("carbohydrate", p.carbohydrate);
-            params.putDouble ("sugar", p.sugar);
-            foodIntent.putExtras (params);
-            startActivityForResult (foodIntent, FOOD_REQUEST);
+                /* Retrieve product data using barcode */
+                Product p = app.findProduct (barcode);
+
+                /* Open food view */
+                Intent foodIntent = new Intent (this, FoodActivity.class);
+                Bundle params = new Bundle ();
+                params.putString ("title", "Add Food Item");
+                params.putString ("name", p.name);
+                params.putString ("manufacturer", p.manufacturer);
+                params.putDouble ("size", p.size);
+                params.putDouble ("quantity", p.quantity);
+                params.putString ("unit", p.unit);
+                params.putString ("barcode", barcode);
+                params.putDouble ("energy", p.energy);
+                params.putDouble ("fat", p.fat);
+                params.putDouble ("carbohydrate", p.carbohydrate);
+                params.putDouble ("sugar", p.sugar);
+                foodIntent.putExtras (params);
+                startActivityForResult (foodIntent, FOOD_REQUEST);
+
+            }
 
         } else {
             
@@ -243,48 +256,23 @@ public class MainActivity extends BaseActivity implements OnClickListener {
                     p.carbohydrate = result.getDouble ("carbohydrate");
                     p.sugar = result.getDouble ("sugar");
 
-                    /* Update fridge */
-                    ArrayList<Product> fridgeContents = app.getFridgeContents ();
-                    boolean insert = true;
-                    for (int i = 0; i < fridgeContents.size (); i++) {
-                        Product q = (Product) fridgeContents.get (i);
-                        if (q.barcode.equals (p.barcode)
-                                && q.name.equals (p.name)
-                                && Math.abs (q.size - p.size) < 0.0001) {
-                            /* Update existing product */
-                            q.manufacturer = p.manufacturer;
-                            q.size = p.size;
-                            q.quantity += p.quantity;
-                            q.unit = p.unit;
-                            q.energy = p.energy;
-                            q.fat = p.fat;
-                            q.carbohydrate = p.carbohydrate;
-                            q.sugar = p.sugar;
-                            insert = false;
-                        }
-                    }
-                    if (insert) {
-                        /* Add product */
-                        fridgeContents.add (p);
-                    }
+                    /* Update foods consumed */
+                    app.saveProduct (db, p);
 
                     /* Update view */
-                    fridgeAdapter.notifyDataSetChanged ();
+                    foodAdapter.notifyDataSetChanged ();
+
+                    /* Format confirmation message */
+                    String msg = "Added "
+                        + String.valueOf (p.quantity)
+                        + " x " + p.name;
 
                     /* Confirmation message */
-                    if (insert) {
-                        Toast.makeText(
-                            getApplicationContext (),
-                            "Inserted " + p.name,
-                            Toast.LENGTH_SHORT
-                        ).show ();
-                    } else {
-                        Toast.makeText(
-                            getApplicationContext (),
-                            "Updated " + p.name,
-                            Toast.LENGTH_SHORT
-                        ).show ();
-                    }
+                    Toast.makeText(
+                        getApplicationContext (),
+                        msg,
+                        Toast.LENGTH_SHORT
+                    ).show ();
                 }
             } else {
 
@@ -307,7 +295,8 @@ public class MainActivity extends BaseActivity implements OnClickListener {
         /* Initialize navigation options */
         drawerList = (ListView) findViewById (R.id.navList);
         String[] options = {
-            "Add Product",
+            "Add Restaurant Meal",
+            "Add Custom Food Item",
         };
         drawerAdapter = new ArrayAdapter<String> (
             /* Context */ this,
@@ -326,11 +315,32 @@ public class MainActivity extends BaseActivity implements OnClickListener {
             public void onItemClick (
                     AdapterView<?> parent, View view, int position, long id)
             {
+                Intent foodIntent;
+                Bundle params = new Bundle ();
+
                 switch (position) {
                 case 0:
-                    /* Add product manually */
-                    Intent foodIntent = new Intent (MainActivity.this, FoodActivity.class);
-                    Bundle params = new Bundle ();
+                    /* Add restaurant meal */
+                    foodIntent = new Intent (MainActivity.this, FoodActivity.class);
+                    params.putString ("title", "Add Restaurant Meal");
+                    params.putString ("name", "Restaurant Meal");
+                    params.putString ("manufacturer", "");
+                    params.putDouble ("size", 1.0);
+                    params.putDouble ("quantity", 1.0);
+                    params.putString ("unit", "pcs");
+                    params.putString ("barcode", "");
+                    params.putDouble ("energy", 560.0);
+                    params.putDouble ("fat", 30.0);
+                    params.putDouble ("carbohydrate", 47.0);
+                    params.putDouble ("sugar", 8.0);
+                    foodIntent.putExtras (params);
+                    startActivityForResult (foodIntent, FOOD_REQUEST);
+                    break;
+
+                case 1:
+                    /* Add any product manually */
+                    foodIntent = new Intent (MainActivity.this, FoodActivity.class);
+                    params.putString ("title", "Add Custom Food Item");
                     params.putString ("name", "");
                     params.putString ("manufacturer", "");
                     params.putDouble ("size", 0.0);

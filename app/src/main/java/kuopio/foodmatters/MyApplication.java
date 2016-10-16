@@ -8,7 +8,7 @@ import java.util.ArrayList;
  * Global functions.
  */
 public class MyApplication extends Application {
-    private ArrayList<Product> fridgeContents;
+    private ArrayList<Product> foodContents;
 
     /*
      * Initialize application.
@@ -17,16 +17,15 @@ public class MyApplication extends Application {
     public void onCreate () {
         super.onCreate ();
 
-        /* Initialize fridge contents */
-        fridgeContents = new ArrayList<Product> ();
-
+        /* Initialize foods consumed */
+        foodContents = new ArrayList<Product> ();
     }
 
     /*
      * Get global data.
      */
-    public ArrayList<Product> getFridgeContents () {
-        return fridgeContents;
+    public ArrayList<Product> getProducts () {
+        return foodContents;
     }
 
     /*
@@ -35,16 +34,17 @@ public class MyApplication extends Application {
     public Product findProduct (String barcode) {
         Product p = null;
 
-        /* Find product from fridge */
-        for (int i = 0; i < fridgeContents.size (); i++) {
-            Product q = (Product) fridgeContents.get (i);
+        /* Find product from consumed products */
+        for (int i = 0; i < foodContents.size (); i++) {
+            Product q = (Product) foodContents.get (i);
             if (q.barcode.equals (barcode)) {
+                /* Found from consumed foods */
                 p = q;
                 break;
             }
         }
 
-        /* Find product from database */
+        /* Find default product from database */
         if (p == null) {
             p = _findProduct (barcode);
         }
@@ -147,4 +147,35 @@ public class MyApplication extends Application {
         }
         return p;
     }
+
+    /*
+     * Load consumed foods from database.
+     */
+    public void loadProducts (DatabaseHandler db) {
+        /* Clear existing contents */
+        foodContents.clear ();
+
+        /* Load products from database */
+        ArrayList<Product> arr = db.loadProducts ();
+
+        /* Insert products from database to existing array */
+        for (int i = 0; i < arr.size (); i++) {
+            Product p = (Product) arr.get (i);
+            if (p.quantity > 0.0001) {
+                foodContents.add (p);
+            }
+        }
+    }
+
+    /*
+     * Save product.
+     */
+    public void saveProduct (DatabaseHandler db, Product p) {
+        /* Save product to database */
+        db.saveProduct (p);
+
+        /* Re-load database to memory */
+        loadProducts (db);
+    }
+
 }
