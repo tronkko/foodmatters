@@ -33,10 +33,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="My Fridge"
+                android:text="Groceries since Oct 1"
                 android:id="@+id/textView"
                 android:paddingTop="10dp"
-                android:paddingBottom="10dp"/>
+                android:paddingBottom="10dp"
+                android:textColor="#000"/>
         </RelativeLayout>
 
         <ListView
@@ -55,7 +56,8 @@
             android:layout_alignParentEnd="false"
             android:stackFromBottom="false"
             android:layout_above="@+id/relativeLayout"
-            android:layout_below="@+id/relativeLayout2"/>
+            android:layout_below="@+id/relativeLayout2"
+            android:fastScrollEnabled="false"/>
 
         <RelativeLayout
             android:layout_width="match_parent"

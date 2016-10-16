@@ -6,8 +6,10 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.view.Menu;
@@ -30,6 +32,8 @@ import java.util.ArrayList;
  * https://code.tutsplus.com/tutorials/android-sdk-create-a-barcode-reader--mobile-17162
  */
 public class MainActivity extends BaseActivity implements OnClickListener {
+    static final int FOOD_REQUEST = 1;
+
     private ListView drawerList;
     private ArrayAdapter<String> drawerAdapter;
     private ActionBarDrawerToggle drawerToggle;
@@ -38,8 +42,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
     private Button scanButton;
     private TextView contentText;
     private ListView fridgeList;
-    private ArrayList<String> fridgeContents;
-    private ArrayAdapter<String> fridgeAdapter;
+    private ArrayAdapter<Product> fridgeAdapter;
 
     /*
      * Initialize application.
@@ -65,11 +68,10 @@ public class MainActivity extends BaseActivity implements OnClickListener {
         fridgeList = (ListView) findViewById (R.id.list_view);
 
         /* Initialize fridge contents */
-        fridgeContents = new ArrayList<String> ();
-        fridgeContents.add ("Valio rasvaton maito 1 l");
+        ArrayList<Product> fridgeContents = app.getFridgeContents ();
 
         /* Define list adapter */
-        fridgeAdapter = new ArrayAdapter<String>(
+        fridgeAdapter = new ArrayAdapter<Product> (
             /* Context */ this,
             /* Row layout */ android.R.layout.simple_list_item_1,
             /* TextView */ android.R.id.text1,
@@ -81,26 +83,32 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
         /* Handle click in list view */
         fridgeList.setOnItemClickListener(
-            new AdapterView.OnItemClickListener ()
-        {
+            new AdapterView.OnItemClickListener () {
 
             @Override
             public void onItemClick(
-                AdapterView<?> parent, View view, int position, long id) 
+                AdapterView<?> parent, View view, int position, long id)
             {
 
-                /* ListView Clicked item index */
-                int itemPosition = position;
+                /* Get clicked product */
+                Product p = (Product) fridgeList.getItemAtPosition (position);
 
-                /* ListView Clicked item value */
-                String itemValue = (String) fridgeList.getItemAtPosition (position);
+                /* Open product in food view */
+                Intent foodIntent = new Intent (MainActivity.this, FoodActivity.class);
+                Bundle params = new Bundle ();
+                params.putString ("name", p.name);
+                params.putString ("manufacturer", p.manufacturer);
+                params.putDouble ("size", p.size);
+                params.putDouble ("quantity", p.quantity);
+                params.putString ("unit", p.unit);
+                params.putString ("barcode", p.barcode);
+                params.putDouble ("energy", p.energy);
+                params.putDouble ("fat", p.fat);
+                params.putDouble ("carbohydrate", p.carbohydrate);
+                params.putDouble ("sugar", p.sugar);
+                foodIntent.putExtras (params);
+                startActivityForResult (foodIntent, FOOD_REQUEST);
 
-                /* Show Alert */
-                Toast.makeText(
-                    getApplicationContext (),
-                    "Position :" + itemPosition + "  ListItem : " +itemValue,
-                    Toast.LENGTH_LONG
-                ).show();
             }
 
         });
@@ -126,7 +134,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
         switch (id) {
         case R.id.item1:
             /* FIXME: option 1 */
-            Toast.makeText (
+            Toast.makeText(
                 getApplicationContext (),
                 "Item 1 Selected",
                 Toast.LENGTH_LONG
@@ -136,7 +144,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
         case R.id.item2:
             /* FIXME: option 2 */
-            Toast.makeText (
+            Toast.makeText(
                 getApplicationContext (),
                 "Item 2 Selected",
                 Toast.LENGTH_LONG
@@ -159,7 +167,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
     /*
      * Respond to button presses.
      */
-    public void onClick (View v){
+    public void onClick (View v) {
         /* Get identifier of clicked button */
         int id = v.getId ();
 
@@ -173,7 +181,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
         default:
             /* Invalid button */
-            Toast.makeText (
+            Toast.makeText(
                 getApplicationContext (),
                 "Invalid button " + id,
                 Toast.LENGTH_LONG
@@ -184,79 +192,112 @@ public class MainActivity extends BaseActivity implements OnClickListener {
     /*
      * Retrieve result of scan.
      */
-    public void onActivityResult (
-            int requestCode, int resultCode, Intent intent)
+    public void onActivityResult(
+        int requestCode, int resultCode, Intent data)
     {
         /* Got bar code? */
         IntentResult r = IntentIntegrator.parseActivityResult(
-            requestCode, resultCode, intent);
+            requestCode, resultCode, data);
         if (r != null) {
 
             /* Yes, retrieve barcode */
             String barcode = r.getContents ();
             contentText.setText (barcode);
 
+            /* Retrieve product data using barcode */
+            Product p = app.findProduct (barcode);
+
             /* Open food view */
             Intent foodIntent = new Intent (this, FoodActivity.class);
-            foodIntent.putExtra ("barcode", barcode);
-            startActivity (foodIntent);
-
-            /* Get product */
-            //String label = getProductLabel (barcode);
-
-            /* Push code to fridge */
-            //fridgeContents.add (label);
-            //fridgeAdapter.notifyDataSetChanged ();
-
-            /* Confirm scan */
-            /*
-            Toast.makeText(
-                getApplicationContext (),
-                "Added " + label,
-                Toast.LENGTH_LONG
-            ).show ();
-            */
+            Bundle params = new Bundle ();
+            params.putString ("name", p.name);
+            params.putString ("manufacturer", p.manufacturer);
+            params.putDouble ("size", p.size);
+            params.putDouble ("quantity", p.quantity);
+            params.putString ("unit", p.unit);
+            params.putString ("barcode", barcode);
+            params.putDouble ("energy", p.energy);
+            params.putDouble ("fat", p.fat);
+            params.putDouble ("carbohydrate", p.carbohydrate);
+            params.putDouble ("sugar", p.sugar);
+            foodIntent.putExtras (params);
+            startActivityForResult (foodIntent, FOOD_REQUEST);
 
         } else {
+            
+            /* Handle other activities */
+            if (requestCode == FOOD_REQUEST) {
+                if (resultCode == RESULT_OK) {
 
-            /* No bar code in view */
-            Toast.makeText(
-                getApplicationContext (),
-                "No scan data received!",
-                Toast.LENGTH_SHORT
-            ).show ();
+                    /* Read product info */
+                    Bundle result = data.getExtras ();
+                    Product p = new Product ();
+                    p.name = result.getString ("name");
+                    p.manufacturer = result.getString ("manufacturer");
+                    p.size = result.getDouble ("size");
+                    p.quantity = result.getDouble ("quantity");
+                    p.unit = result.getString ("unit");
+                    p.barcode = result.getString ("barcode");
+                    p.energy = result.getDouble ("energy");
+                    p.fat = result.getDouble ("fat");
+                    p.carbohydrate = result.getDouble ("carbohydrate");
+                    p.sugar = result.getDouble ("sugar");
+
+                    /* Update fridge */
+                    ArrayList<Product> fridgeContents = app.getFridgeContents ();
+                    boolean insert = true;
+                    for (int i = 0; i < fridgeContents.size (); i++) {
+                        Product q = (Product) fridgeContents.get (i);
+                        if (q.barcode.equals (p.barcode)
+                                && q.name.equals (p.name)
+                                && Math.abs (q.size - p.size) < 0.0001) {
+                            /* Update existing product */
+                            q.manufacturer = p.manufacturer;
+                            q.size = p.size;
+                            q.quantity += p.quantity;
+                            q.unit = p.unit;
+                            q.energy = p.energy;
+                            q.fat = p.fat;
+                            q.carbohydrate = p.carbohydrate;
+                            q.sugar = p.sugar;
+                            insert = false;
+                        }
+                    }
+                    if (insert) {
+                        /* Add product */
+                        fridgeContents.add (p);
+                    }
+
+                    /* Update view */
+                    fridgeAdapter.notifyDataSetChanged ();
+
+                    /* Confirmation message */
+                    if (insert) {
+                        Toast.makeText(
+                            getApplicationContext (),
+                            "Inserted " + p.name,
+                            Toast.LENGTH_SHORT
+                        ).show ();
+                    } else {
+                        Toast.makeText(
+                            getApplicationContext (),
+                            "Updated " + p.name,
+                            Toast.LENGTH_SHORT
+                        ).show ();
+                    }
+                }
+            } else {
+
+                /* Unhandled result */
+                Toast.makeText(
+                    getApplicationContext (),
+                    "Invalid activity result!",
+                    Toast.LENGTH_SHORT
+                ).show ();
+
+            }
 
         }
-    }
-
-    /*
-     * Find label for barcode.
-     */
-    public String getProductLabel (String barcode) {
-        String label;
-
-        switch (barcode) {
-        case "6410530071137":
-            label = "MediPlast leikattava kangaslaastari 6x50 cm";
-            break;
-
-        case "4304493255685":
-            label = "Freeway Sugarfree energy drink 0,25 l";
-            break;
-
-        case "20643546":
-            label = "Huhtahyvä keittokinkku 300 g";
-            break;
-
-        case "20092924":
-            label = "Crusti Croc Sour Cream & Cheese 200 g";
-            break;
-
-        default:
-            label = barcode;
-        }
-
-        return label;
     }
 
     /*
@@ -266,11 +307,9 @@ public class MainActivity extends BaseActivity implements OnClickListener {
         /* Initialize navigation options */
         drawerList = (ListView) findViewById (R.id.navList);
         String[] options = {
-            "Shopping Bag",
-            "Design a Meal",
-            "My Recipes"
+            "Add Product",
         };
-        drawerAdapter = new ArrayAdapter<String>(
+        drawerAdapter = new ArrayAdapter<String> (
             /* Context */ this,
             /* Row layout */ android.R.layout.simple_list_item_1,
             /* TextView */ android.R.id.text1,
@@ -284,35 +323,26 @@ public class MainActivity extends BaseActivity implements OnClickListener {
         {
 
             @Override
-            public void onItemClick(
-                AdapterView<?> parent, View view, int position, long id)
+            public void onItemClick (
+                    AdapterView<?> parent, View view, int position, long id)
             {
                 switch (position) {
                 case 0:
-                    /* FIXME: Unload shopping bag */
-                    Toast.makeText(
-                        getApplicationContext (),
-                        "Shopping Bag",
-                        Toast.LENGTH_SHORT
-                    ).show ();
-                    break;
-
-                case 1:
-                    /* FIXME: Design a Meal */
-                    Toast.makeText(
-                        getApplicationContext (),
-                        "Design a Meal",
-                        Toast.LENGTH_SHORT
-                    ).show ();
-                    break;
-
-                case 2:
-                    /* FIXME: Food recipes */
-                    Toast.makeText(
-                        getApplicationContext (),
-                        "My Recipes",
-                        Toast.LENGTH_SHORT
-                    ).show ();
+                    /* Add product manually */
+                    Intent foodIntent = new Intent (MainActivity.this, FoodActivity.class);
+                    Bundle params = new Bundle ();
+                    params.putString ("name", "");
+                    params.putString ("manufacturer", "");
+                    params.putDouble ("size", 0.0);
+                    params.putDouble ("quantity", 0.0);
+                    params.putString ("unit", "g");
+                    params.putString ("barcode", "");
+                    params.putDouble ("energy", 0.0);
+                    params.putDouble ("fat", 0.0);
+                    params.putDouble ("carbohydrate", 0.0);
+                    params.putDouble ("sugar", 0.0);
+                    foodIntent.putExtras (params);
+                    startActivityForResult (foodIntent, FOOD_REQUEST);
                     break;
 
                 default:
@@ -334,7 +364,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
         drawerLayout = (DrawerLayout) findViewById (R.id.drawer_layout);
 
         /* Open and close drawer */
-        drawerToggle = new ActionBarDrawerToggle(
+        drawerToggle = new ActionBarDrawerToggle (
             this, drawerLayout, R.string.drawer_open, R.string.drawer_close)
         {
             public void onDrawerOpened (View view) {
@@ -346,11 +376,12 @@ public class MainActivity extends BaseActivity implements OnClickListener {
                 /* Rebuild option menu */
                 invalidateOptionsMenu ();
             }
+
             public void onDrawerClosed (View view) {
                 super.onDrawerClosed (view);
 
                 /* Rebuild option menu */
-                invalidateOptionsMenu();
+                invalidateOptionsMenu ();
             }
         };
 
